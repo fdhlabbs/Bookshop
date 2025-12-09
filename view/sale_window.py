@@ -4,9 +4,8 @@ from tkinter import ttk
 from datetime import datetime
 from tksheet import Sheet
 
-
-
 from controller.sale_service import Sale_Service
+from view.checkout_window import Checkout_Window
 from model import *
 
 
@@ -25,9 +24,12 @@ class Sale_Window(tk.Toplevel):
         self.config(menu=menubar)
 
         nav_menu = tk.Menu(menubar, tearoff=0)
-        nav_menu.add_command(label="Book")   # TODO: hook logic later
-        nav_menu.add_command(label="Sale")   # current window
-        nav_menu.add_command(label="Staff")  # TODO: hook logic later
+        if app.staff_role == "admin":
+            nav_menu.add_command(label="Book")   # TODO: hook logic later
+            nav_menu.add_command(label="Staff")  # TODO: hook logic later
+            nav_menu.add_command(label="Sale")   # TODO: hook logic later
+            
+        nav_menu.add_command(label="Daily Report")   # TODO: hook logic later
         menubar.add_cascade(label="Navigate", menu=nav_menu)
 
         # ---------- Layout config ----------
@@ -88,6 +90,8 @@ class Sale_Window(tk.Toplevel):
         form_frame.columnconfigure(2, weight=0)
         form_frame.columnconfigure(3, weight=0)
         form_frame.columnconfigure(4, weight=0)
+        form_frame.columnconfigure(5, weight=0)
+
 
         # Item dropdown
         ttk.Label(form_frame, text="Item:").grid(row=0, column=0, sticky="w")
@@ -120,8 +124,15 @@ class Sale_Window(tk.Toplevel):
 
         # Bind + button
         self.item_combo.bind("<<ComboboxSelected>>", self._on_item_selected)
+        
         self.add_btn = ttk.Button(form_frame, text="Add Sale", command=self.on_add_sale)
-        self.add_btn.grid(row=0, column=4, sticky="e")
+        self.add_btn.grid(row=0, column=4, sticky="e", padx=(0, 5))
+
+        self.checkout_btn = ttk.Button(form_frame, text="Checkout", command=self.on_checkout)
+        self.checkout_btn.grid(row=0, column=5, sticky="e")
+
+
+
 
         # INITIAL POPULATION OF COMBO
         self._refresh_book_combo()
@@ -299,3 +310,18 @@ class Sale_Window(tk.Toplevel):
         self.item_var.set("")
         self.item_combo.set("")
         self.qty_var.set("1")
+
+
+
+
+
+
+
+
+
+    def on_checkout(self):
+        # Prevent checkout if no items
+        if not self.app.current_book_sale:
+            return
+
+        Checkout_Window(self.app)

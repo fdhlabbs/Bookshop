@@ -1,9 +1,18 @@
 # controller/sale_service.py
-from model import Book
-import copy
+from model import Sale, Book_Sale
+from datetime import datetime
 
 
 class Sale_Service:
+    
+    TAX_RATE = 0.06  # 6% GST/SST or similar
+    
+    VOUCHERS = {
+        "": 0.00,
+        "FIRSTTIMEBUY": 0.05,
+        "RAYA": 0.07,
+    }
+
     @staticmethod
     def get_book_for_display(current_book_sale):
         """
@@ -174,3 +183,38 @@ class Sale_Service:
             row[1] = sale_id
 
         return aggregated
+    
+
+
+
+
+
+
+@staticmethod
+def addSale(book_sale, sale):
+    if not book_sale or not sale:
+        return
+
+    sale_table = Sale().table
+    book_sale_table = Book_Sale().table
+
+    sale_id = sale.get("sale_id")
+
+    # 1. Sale header
+    sale_row = [
+        sale_id,
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        sale.get("staff_id"),
+        f"{sale.get('subtotal', 0):.2f}",
+        f"{sale.get('tax', 0):.2f}",
+        f"{sale.get('discount', 0):.2f}",
+        f"{sale.get('total', 0):.2f}",
+    ]
+    sale_table.append(sale_row)
+
+    # 2. Line items: force sale_id to match header sale_id
+    for row in book_sale:
+        row[1] = sale_id          # overwrite whatever was there
+        book_sale_table.append(row)
+
+    print("Sale saved successfully.")
