@@ -218,3 +218,5 @@ def addSale(book_sale, sale):
         book_sale_table.append(row)
 
     print("Sale saved successfully.")
+
+    book_table = Book
