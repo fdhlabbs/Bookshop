@@ -1,11 +1,13 @@
 # controller/sale_window.py
 import tkinter as tk
+from tkinter import messagebox
 from tkinter import ttk
 from datetime import datetime
 from tksheet import Sheet
 
 from controller.sale_service import Sale_Service
 from view.checkout_window import Checkout_Window
+from view.book_window import Book_Window
 from model import *
 
 
@@ -25,12 +27,22 @@ class Sale_Window(tk.Toplevel):
 
         nav_menu = tk.Menu(menubar, tearoff=0)
         if app.staff_role == "admin":
-            nav_menu.add_command(label="Book")   # TODO: hook logic later
-            nav_menu.add_command(label="Staff")  # TODO: hook logic later
-            nav_menu.add_command(label="Sale")   # TODO: hook logic later
+            nav_menu.add_command(label="Book", command=self.open_book_window)
+            nav_menu.add_command(label="Staff")
+            nav_menu.add_command(label="Sale")
             
-        nav_menu.add_command(label="Daily Report")   # TODO: hook logic later
+        nav_menu.add_command(label="Daily Report")
         menubar.add_cascade(label="Navigate", menu=nav_menu)
+
+
+
+
+
+
+
+
+
+
 
         # ---------- Layout config ----------
         self.columnconfigure(0, weight=1)
@@ -150,7 +162,9 @@ class Sale_Window(tk.Toplevel):
 
 
     def _on_item_selected(self, event=None):
-        """Update the qty Spinbox max based on selected book stock."""
+        """
+        Update the qty Spinbox max based on selected book stock.
+        """
         idx = self.item_combo.current()
         if idx < 0:
             return
@@ -186,6 +200,9 @@ class Sale_Window(tk.Toplevel):
 
 
     def on_add_sale(self):
+        """
+        Add selected book to current_book_sale and sheet
+        """
         # Must have a selected item
         index = self.item_combo.current()
         if index < 0:
@@ -216,16 +233,13 @@ class Sale_Window(tk.Toplevel):
             qty = stock
             self.qty_var.set(str(qty))
 
-        # Use App-level sale state
-        current_sale_id = self.app.current_sale_id
-        current_book_sale = self.app.current_book_sale
 
-        # Add via service
+        current_book_sale = self.app.current_book_sale
         updated_book_sale = Sale_Service.add_book_to_current_book_sale(
             current_book_sale,
             book_row,
             qty,
-            current_sale_id,
+            "",
         )
 
         # Store back on the app
@@ -325,3 +339,21 @@ class Sale_Window(tk.Toplevel):
             return
 
         Checkout_Window(self.app)
+
+
+
+
+
+
+
+
+
+
+    def open_book_window(self):
+        if self.app.current_book_sale:
+            messagebox.showwarning(
+                "Active Sale",
+                "Please complete or cancel the current sale before editing books."
+            )
+            return
+        Book_Window(self.app)

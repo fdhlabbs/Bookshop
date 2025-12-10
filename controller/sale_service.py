@@ -1,6 +1,7 @@
 # controller/sale_service.py
-from model import Sale, Book_Sale
+from model import Sale, Book_Sale, Book
 from datetime import datetime
+import copy
 
 
 class Sale_Service:
@@ -190,33 +191,69 @@ class Sale_Service:
 
 
 
-@staticmethod
-def addSale(book_sale, sale):
-    if not book_sale or not sale:
-        return
 
-    sale_table = Sale().table
-    book_sale_table = Book_Sale().table
+    @staticmethod
+    def addSale(book_sale, sale):
+        """
+        book_sale  -> app.current_book_sale (list of line items)
+        sale       -> app.current_sale (dictionary)
+        """
 
-    sale_id = sale.get("sale_id")
+        if not book_sale or not sale:
+            return  # nothing to save
 
-    # 1. Sale header
-    sale_row = [
-        sale_id,
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        sale.get("staff_id"),
-        f"{sale.get('subtotal', 0):.2f}",
-        f"{sale.get('tax', 0):.2f}",
-        f"{sale.get('discount', 0):.2f}",
-        f"{sale.get('total', 0):.2f}",
-    ]
-    sale_table.append(sale_row)
+        sale_table = Sale().table
+        book_sale_table = Book_Sale().table
+        book_table = Book().table
 
-    # 2. Line items: force sale_id to match header sale_id
-    for row in book_sale:
-        row[1] = sale_id          # overwrite whatever was there
-        book_sale_table.append(row)
+        sale_id = sale.get("sale_id")
 
-    print("Sale saved successfully.")
+        # --------- 1. ADD SALE RECORD ----------
+        sale_row = [
+            sale_id,
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            sale.get("staff_id"),
+            f"{sale.get('subtotal', 0):.2f}",
+            f"{sale.get('tax', 0):.2f}",
+            f"{sale.get('discount', 0):.2f}",
+            f"{sale.get('total', 0):.2f}",
+        ]
+        sale_table.append(sale_row)
 
-    book_table = Book
+        # --------- 2. UPDATE BOOK STOCK ----------
+        for bs_row in book_sale:
+            # bs_row: [book_id, sale_id, quantity, price_at_sale, line_total]
+            book_id = bs_row[0]
+            qty_str = bs_row[2]
+
+            try:
+                qty = int(qty_str)
+            except (TypeError, ValueError):
+                qty = 0
+
+            if qty <= 0:
+                continue
+
+            # find matching book in Book.table
+            for book_row in book_table:
+                # book_row: [book_id, title, author, category, isbn, price, stock]
+                if book_row[0] == book_id:
+                    try:
+                        stock = int(book_row[6])
+                    except (TypeError, ValueError):
+                        stock = 0
+
+                    new_stock = stock - qty
+                    if new_stock < 0:
+                        new_stock = 0
+
+                    book_row[6] = str(new_stock)
+                    break  # stop after matching book_id
+
+        # --------- 3. ADD BOOK_SALE RECORDS ----------
+        # Force all line items to use the final sale_id
+        for row in book_sale:
+            row[1] = sale_id  # overwrite placeholder / old id
+            book_sale_table.append(row)
+
+        print("Sale saved successfully.")

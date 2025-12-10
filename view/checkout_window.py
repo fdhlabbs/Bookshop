@@ -125,7 +125,28 @@ class Checkout_Window(tk.Toplevel):
             command=self.on_checkout,
         ).grid(row=row, column=0, columnspan=2, pady=(5, 0))
 
-    # -------- helpers / callbacks --------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def _compute_subtotal(self) -> float:
         """Sum line_total from current_book_sale."""
@@ -137,6 +158,22 @@ class Checkout_Window(tk.Toplevel):
             except (IndexError, ValueError, TypeError):
                 continue
         return subtotal
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def on_calculate(self):
         # --- voucher / discount ---
@@ -182,15 +219,24 @@ class Checkout_Window(tk.Toplevel):
         self.total_var.set(f"{self.total_value:.2f}")
         self.balance_var.set(f"{self.balance_value:.2f}")
 
+
+
+
+
+
+
+
+
+
     def on_checkout(self):
         """
-        Finalise the sale: push values into app.current_sale.
-        No DB write yet, just store in-memory.
+        Finalise the sale: push values into app.current_sale
+        and update tables via Sale_Service.addSale.
         """
-        # Make sure everything is up to date even if user didn't press Calculate
+        # Ensure calculations are up to date
         self.on_calculate()
 
-        # Safely parse cash again (in case on_calculate didn't get called before)
+        # Safely parse cash again
         cash_str = self.cash_received_var.get().strip()
         try:
             cash = float(cash_str) if cash_str else 0.0
@@ -212,8 +258,14 @@ class Checkout_Window(tk.Toplevel):
             "voucher_code": self.discount_code_var.get().strip().upper(),
         }
 
-        # NOTE: app.current_book_sale already contains the line items
-        # We don't modify it here, just leave it as-is.
-
+        # Persist to in-memory tables
         Sale_Service.addSale(self.app.current_book_sale, self.app.current_sale)
+
+        # ---- RESET STATE FOR NEXT SALE ----
+        self.app.current_book_sale = []
+        self.app.current_sale = {}
+
+        # Note: Sale_Window UI still shows old rows until you decide how to refresh it.
+        # We can wire that later (clear sheet, repopulate combo, etc.).
+
         self.destroy()
